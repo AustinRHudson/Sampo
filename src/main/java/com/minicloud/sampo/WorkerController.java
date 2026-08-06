@@ -23,6 +23,8 @@ public class WorkerController {
     @PostMapping("/register")
     public void registerWorker(@RequestBody Worker worker) {
         workerService.addWorker(worker);
+        System.out.println("Worker registered!");
+        System.out.println("Worker: " + worker);
     }
 
     @GetMapping("/list")
