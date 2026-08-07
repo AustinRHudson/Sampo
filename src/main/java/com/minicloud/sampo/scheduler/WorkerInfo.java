@@ -1,6 +1,6 @@
-package com;
+package com.minicloud.sampo.scheduler;
 
-public class Worker {
+public class WorkerInfo {
     private String id;
 
     private String name;
@@ -9,7 +9,7 @@ public class Worker {
 
     private String status;
 
-    public Worker(String id, String name, int port, String status) {
+    public WorkerInfo(String id, String name, int port, String status) {
         this.id = id;
         this.name = name;
         this.port = port;

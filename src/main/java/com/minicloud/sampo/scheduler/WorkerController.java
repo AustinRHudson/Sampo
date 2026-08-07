@@ -1,6 +1,4 @@
-package com.minicloud.sampo;
-
-import com.Worker;
+package com.minicloud.sampo.scheduler;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,14 +19,14 @@ public class WorkerController {
     }
 
     @PostMapping("/register")
-    public void registerWorker(@RequestBody Worker worker) {
+    public void registerWorker(@RequestBody WorkerInfo worker) {
         workerService.addWorker(worker);
         System.out.println("Worker registered!");
         System.out.println("Worker: " + worker);
     }
 
     @GetMapping("/list")
-    public Map<String, Worker> listWorkers() {
+    public Map<String, WorkerInfo> listWorkers() {
         return workerService.getWorkers();
     }
 }

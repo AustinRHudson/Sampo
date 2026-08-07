@@ -1,21 +1,19 @@
-package com.minicloud.sampo;
+package com.minicloud.sampo.scheduler;
 
 import org.springframework.stereotype.Service;
-
-import com.Worker;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class WorkerService {
-    private Map<String, Worker> workers = new ConcurrentHashMap<>();
+    private Map<String, WorkerInfo> workers = new ConcurrentHashMap<>();
 
-    public void addWorker(Worker worker) {
+    public void addWorker(WorkerInfo worker) {
         workers.put(worker.getId(), worker);
     }
 
-    public Map<String, Worker> getWorkers() {
+    public Map<String, WorkerInfo> getWorkers() {
         return workers;
     }
 }
