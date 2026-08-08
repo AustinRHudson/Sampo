@@ -9,18 +9,21 @@ public class WorkerInfo {
 
     private String status;
 
-    public WorkerInfo(String id, String name, int port, String status) {
+    public WorkerInfo(String id, int port, String status) {
         this.id = id;
-        this.name = name;
         this.port = port;
         this.status = status;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public String getId() {
         return this.id;
+    }
+
+    public int getPort() {
+        return this.port;
+    }
+
+    public String getStatus() {
+        return this.status;
     }
 }
