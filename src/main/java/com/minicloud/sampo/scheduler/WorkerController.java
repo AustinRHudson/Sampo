@@ -13,6 +13,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+import java.net.http.*;
+import java.net.URI;
+
 @RestController
 @RequestMapping("/workers")
 public class WorkerController {
@@ -21,6 +24,8 @@ public class WorkerController {
     public WorkerController(WorkerService workerService) {
         this.workerService = workerService;
     }
+
+    private final HttpClient client = java.net.http.HttpClient.newHttpClient();
 
     ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
@@ -40,11 +45,10 @@ public class WorkerController {
             pb.start();
             executorService.scheduleAtFixedRate(() -> {
                 try {
-                    java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
-                    java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
-                            .uri(java.net.URI.create("http://localhost:" + worker.getPort() + "/status"))
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create("http://localhost:" + worker.getPort() + "/status"))
                             .build();
-                    java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                     System.out.println(response.body());
                 } catch (Exception e) {
                     System.out.println("Worker " + worker.getId() + " is offline.");
