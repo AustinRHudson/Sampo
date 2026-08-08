@@ -4,7 +4,6 @@ document.getElementById("workerForm").addEventListener("submit", async (event) =
 
     const worker = {
         id: document.getElementById("id").value,
-        host: document.getElementById("host").value,
         port: parseInt(document.getElementById("port").value),
         status: document.getElementById("status").value
     };

@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 @RestController
 @RequestMapping("/workers")
 public class WorkerController {
@@ -18,10 +22,12 @@ public class WorkerController {
         this.workerService = workerService;
     }
 
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+
     @PostMapping("/register")
     public void registerWorker(@RequestBody WorkerInfo worker) {
-        if(workerService.getWorkers().containsKey(worker.getId())) {
-            System.out.println("Worker already registered!");
+        if(workerService.getWorkers().containsKey(String.valueOf(worker.getPort()))) {
+            System.out.println("This port is in use!");
             return;
         }
         workerService.addWorker(worker);
@@ -32,6 +38,18 @@ public class WorkerController {
          pb.inheritIO(); 
         try {
             pb.start();
+            executorService.scheduleAtFixedRate(() -> {
+                try {
+                    java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+                    java.net.http.HttpRequest request = java.net.http.HttpRequest.newBuilder()
+                            .uri(java.net.URI.create("http://localhost:" + worker.getPort() + "/status"))
+                            .build();
+                    java.net.http.HttpResponse<String> response = client.send(request, java.net.http.HttpResponse.BodyHandlers.ofString());
+                    System.out.println(response.body());
+                } catch (Exception e) {
+                    System.out.println("Worker " + worker.getId() + " is offline.");
+                }
+            }, 5, 5, TimeUnit.SECONDS);
         } catch (Exception e) {
             e.printStackTrace();
         }

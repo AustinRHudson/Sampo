@@ -18,7 +18,7 @@ public class WorkerApplication {
         HttpServer server = HttpServer.create(new InetSocketAddress(workerPort), 0);
 
         server.createContext("/status", exchange -> {
-            String response = "Worker ID: " + workerId + ", Status: " + workerStatus;
+            String response = "Worker ID: " + workerId + ", Port: " + workerPort + ", Status: " + workerStatus;
             exchange.sendResponseHeaders(200, response.getBytes().length);
             OutputStream os = exchange.getResponseBody();
             os.write(response.getBytes());

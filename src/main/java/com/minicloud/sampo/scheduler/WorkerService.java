@@ -10,7 +10,7 @@ public class WorkerService {
     private Map<String, WorkerInfo> workers = new ConcurrentHashMap<>();
 
     public void addWorker(WorkerInfo worker) {
-        workers.put(worker.getId(), worker);
+        workers.put(String.valueOf(worker.getPort()), worker);
     }
 
     public Map<String, WorkerInfo> getWorkers() {
