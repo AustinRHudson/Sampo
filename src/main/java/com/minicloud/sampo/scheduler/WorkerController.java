@@ -60,8 +60,12 @@ public class WorkerController {
         workerService.addWorker(worker);
         System.out.println("Worker registered!");
         System.out.println("Worker: " + worker.getId() + ", Port: " + worker.getPort() + ", Status: " + worker.getStatus());
-        ProcessBuilder pb = new ProcessBuilder("java", "-cp", "target/classes",
-         "com.minicloud.sampo.worker.WorkerApplication", worker.getId(), String.valueOf(worker.getPort()));
+        ProcessBuilder pb = new ProcessBuilder(
+    "mvn",
+    "exec:java",
+    "-Dexec.mainClass=com.minicloud.sampo.worker.WorkerApplication",
+    "-Dexec.args=" + worker.getId() + " " + worker.getPort()
+);
          pb.inheritIO(); 
         try {
             pb.start();
