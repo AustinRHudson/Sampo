@@ -88,7 +88,7 @@ function App() {
                 <div className="brand">
 
                     <div className="logo">
-                        M
+                        S
                     </div>
 
                     <div>
