@@ -1,7 +1,7 @@
-const API_URL = "http://localhost:8080";
+const API_URL = "http://localhost:8080/workers";
 
 export async function getWorkers() {
-    const response = await fetch(`${API_URL}/workers/list`);
+    const response = await fetch(`${API_URL}/list`);
 
     if (!response.ok) {
         throw new Error("Failed to fetch workers");

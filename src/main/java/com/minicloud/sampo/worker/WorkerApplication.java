@@ -38,6 +38,7 @@ public class WorkerApplication {
         props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, ByteArrayDeserializer.class.getName());
 
         HttpServer server = HttpServer.create(new InetSocketAddress(workerPort), 0);
+        HttpClient client = java.net.http.HttpClient.newHttpClient();
 
         server.createContext("/status", exchange -> {
             String response = "Worker ID: " + workerId + ", Port: " + workerPort + ", Status: " + workerStatus;
@@ -58,6 +59,16 @@ public class WorkerApplication {
                 ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, byte[]> record : records) {
                     System.out.printf("Worker received message:", workerId);
+                    String json = "{" +
+                            "\"jobId\": \"" + record.key() + "\"," +
+                            "\"status\": \"running\"," +
+                            "\"submittedAt\": \"0\"," +
+                            "\"startedAt\": \"1\"," +
+                            "\"completedAt\": \"0\"," +
+                            "\"exitCode\": \"-1\"" +
+                            "}";
+                    sendJobUpdate(json, client);
+                    // update with jobcontroller to update job status in database
                     // Process the job (record.value()) here
                     byte[] jobData = record.value();
                     if(jobData != null) {
@@ -78,10 +89,15 @@ public class WorkerApplication {
 
                         pb.start().waitFor(); // Wait for the Docker build to complete
 
+                        String memoryLimit = "--memory=\"512m\""; // Default memory limit
+                        String cpuLimit = "--cpus=\"1.0\""; // Default CPU limit
+
                         pb = new ProcessBuilder(
                             "docker",
                             "run",
                             "--rm",
+                            memoryLimit,
+                            cpuLimit,
                             fileName.toLowerCase()
                         );
 
@@ -91,9 +107,16 @@ public class WorkerApplication {
 
                         int exitCode = process.waitFor();
 
-                        System.out.println(
-                            "Job finished with exit code: " + exitCode
-                        );
+                        json = "{" +
+                                "\"jobId\": \"" + record.key() + "\"," +
+                                "\"status\": \"completed\"," +
+                                "\"submittedAt\": \"0\"," +
+                                "\"startedAt\": \"0\"," +
+                                "\"completedAt\": \"1\"," +
+                                "\"exitCode\": \"" + exitCode + "\"" +
+                                "}"; 
+
+                        sendJobUpdate(json, client);
 
                         deleteDirectory(outputDir.toString());
                     }
@@ -170,5 +193,30 @@ public class WorkerApplication {
             System.err.println("Failed to walk the directory for deletion: " + e.getMessage());
         }
     }
+
+    /*
+    Template for json
+    "{
+        \"jobId\": \" + record.key() + \",
+        \"status\": \"started\",
+        \"submittedAt\": \"1\",
+        \"startedAt\": \"0\",
+        \"completedAt\": \"0\",
+        \"exitCode\": \"0\"
+
+    }"    
+    */
+    public static void sendJobUpdate(String json, HttpClient client) {
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("http://localhost:8080/workers/jobUpdate"))
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(json))
+                        .build();
+                client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (Exception e) {
+                System.out.println("Failed to send job update to scheduler: " + e.getMessage());
+            }
+        }
 }
 

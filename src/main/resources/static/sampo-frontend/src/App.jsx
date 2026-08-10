@@ -5,6 +5,7 @@ import { getWorkers, getJobs } from "./api";
 import StatCard from "./components/StatCard";
 import WorkerList from "./components/WorkerList";
 import JobList from "./components/JobList";
+import JobUpload from "./components/JobUpload";
 
 import "./App.css";
 
@@ -27,6 +28,7 @@ function App() {
 
             try {
                 const jobData = await getJobs();
+                console.log("Jobs: ", jobData);
                 setJobs(jobData);
             } catch {
                 // Jobs endpoint isn't implemented yet.
@@ -67,17 +69,17 @@ function App() {
 
     const runningJobs =
         jobs.filter(
-            job => job.status === "RUNNING"
+            job => job.status === "running"
         ).length;
 
     const queuedJobs =
         jobs.filter(
-            job => job.status === "QUEUED"
+            job => job.status === "submitted"
         ).length;
 
     const completedJobs =
         jobs.filter(
-            job => job.status === "COMPLETED"
+            job => job.status === "completed"
         ).length;
 
     return (
@@ -149,6 +151,7 @@ function App() {
 
                 </section>
 
+                <JobUpload />
 
                 {loading ? (
 

@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.web.bind.annotation.RequestBody;
@@ -98,10 +99,29 @@ public class WorkerController {
         return workerService.getWorkers();
     }
 
+    @GetMapping("/jobs")
+    public List<Job> getJobs() {
+        List<Job> jobs = jobRepository.findAll();
+        System.out.println(jobs);
+        System.out.println(jobRepository.findBy("status", "submitted"));
+        return jobs;
+    }
+
     @PostMapping("/job")
-    public void receiveJob(@RequestParam("file") MultipartFile file, @RequestParam("jobId") String jobId) throws IOException {
+    public void receiveJob(
+        @RequestParam("file") MultipartFile file,
+        @RequestParam("jobId") String jobId,
+        @RequestParam(value = "cpuLimit", required = false) Double cpuLimit,
+        @RequestParam(value = "memoryLimitMb", required = false) Long memoryLimitMb) throws IOException {
+
         System.out.println("Received job with ID: " + jobId);
-        Job job = new Job(jobId);
+        Job job;
+        if(cpuLimit != null && memoryLimitMb != null) {
+            job = new Job(jobId, cpuLimit.intValue(), memoryLimitMb.intValue());
+        } else {
+            job = new Job(jobId);
+
+        }
         jobRepository.save(job);
         System.out.println("Job saved to database with ID: " + jobId);
         try (Producer<String, byte[]> producer = new KafkaProducer<>(props)) {
@@ -126,6 +146,34 @@ public class WorkerController {
 
         } catch (IOException e) {
             System.err.println("Error reading the local ZIP file: " + e.getMessage());
+            job.setStatus("failed");
+            job.setCompletedTime();
+            job.setExitCode(-1);
+            jobRepository.save(job);
+        }
+    }
+
+    @PostMapping("/jobUpdate")
+    public void updateJobStatus(@RequestBody Map<String, Object> payload) {
+        String jobId = (String) payload.get("jobId");
+        String status = (String) payload.get("status");
+        String exitCode = (String) payload.get("exitCode");
+        String startedAt = (String) payload.get("startedAt");
+        String completedAt = (String) payload.get("completedAt");
+
+        Job job = jobRepository.findById(jobId).orElse(null);
+        if (job != null) {
+            job.setStatus(status);
+            if (startedAt.equals("1")) {
+                job.setStartTime();
+            } else if (completedAt.equals("1")) {
+                job.setCompletedTime();
+                job.setExitCode(Integer.parseInt(exitCode));
+            }
+            jobRepository.save(job);
+            System.out.println("Job " + jobId + " updated to status: " + status);
+        } else {
+            System.err.println("Job with ID " + jobId + " not found.");
         }
     }
 }

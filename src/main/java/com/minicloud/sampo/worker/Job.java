@@ -10,6 +10,7 @@ public class Job {
     @Id
 
     private String id;
+
     private String status;
 
     private LocalDateTime submittedAt;
@@ -20,22 +21,38 @@ public class Job {
 
     private Integer exitCode;
 
-    public Job(String id){
+    private Integer cpuLimit;
+
+    private Integer memoryLimit;
+
+    public Job(String id, Integer cpuLimit, Integer memoryLimit) {
         this.id = id;
         this.status = "submitted";
         this.submittedAt = LocalDateTime.now();
+        this.exitCode = -1;
+        this.cpuLimit = cpuLimit;
+        this.memoryLimit = memoryLimit;
+    }
+
+    public Job(String id) {
+        this.id = id;
+        this.status = "submitted";
+        this.submittedAt = LocalDateTime.now();
+        this.exitCode = -1;
+        this.cpuLimit = 1;
+        this.memoryLimit = 512;
     }
 
     protected Job() {
         // Default constructor for JPA
     }
 
-    public void setStartTime(LocalDateTime startedAt){
-        this.startedAt = startedAt;
+    public void setStartTime(){
+        this.startedAt = LocalDateTime.now();
     }
 
-    public void setCompletedTime(LocalDateTime completedAt){
-        this.completedAt = completedAt;
+    public void setCompletedTime(){
+        this.completedAt = LocalDateTime.now();
     }
 
     public void setExitCode(Integer exitCode){
