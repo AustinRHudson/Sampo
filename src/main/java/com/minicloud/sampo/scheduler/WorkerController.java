@@ -83,8 +83,8 @@ public class WorkerController {
                     HttpRequest request = HttpRequest.newBuilder()
                             .uri(URI.create("http://localhost:" + worker.getPort() + "/status"))
                             .build();
-                    HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                    System.out.println(response.body());
+                    client.send(request, HttpResponse.BodyHandlers.ofString());
+                    //System.out.println(response.body());
                 } catch (Exception e) {
                     System.out.println("Worker " + worker.getId() + " is offline.");
                 }
@@ -109,26 +109,23 @@ public class WorkerController {
     @PostMapping("/job")
     public void receiveJob(
         @RequestParam("file") MultipartFile file,
-        @RequestParam("jobId") String jobId,
         @RequestParam(value = "cpuLimit", required = false) Double cpuLimit,
         @RequestParam(value = "memoryLimitMb", required = false) Long memoryLimitMb) throws IOException {
-
-        System.out.println("Received job with ID: " + jobId);
         Job job;
         if(cpuLimit != null && memoryLimitMb != null) {
-            job = new Job(jobId, cpuLimit.doubleValue(), memoryLimitMb.intValue());
+            job = new Job(cpuLimit.doubleValue(), memoryLimitMb.intValue());
         } else {
-            job = new Job(jobId);
-
+            job = new Job();
         }
+        System.out.println("Received job with ID: " + job.getId());
         jobRepository.save(job);
-        System.out.println("Job saved to database with ID: " + jobId);
+        System.out.println("Job saved to database with ID: " + job.getId());
         try (Producer<String, byte[]> producer = new KafkaProducer<>(props)) {
             System.out.println("Reading ZIP payload from disk...");
             byte[] zipBytes = file.getBytes();
 
-            System.out.printf("Sending Job [%s] (%d bytes) to Kafka...%n", jobId, zipBytes.length);
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>("job-queue", jobId, zipBytes);
+            System.out.printf("Sending Job [%s] (%d bytes) to Kafka...%n", job.getId(), zipBytes.length);
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>("job-queue", String.valueOf(job.getId()), zipBytes);
 
             producer.send(record, new Callback() {
                 @Override
@@ -156,7 +153,16 @@ public class WorkerController {
     public void updateJobStatus(@RequestBody Map<String, Object> payload) {
         String jobId = (String) payload.get("jobId");
         String status = (String) payload.get("status");
-        String exitCode = (String) payload.get("exitCode");
+        Integer exitCode = null;
+        Object exitCodeObj = payload.get("exitCode");
+        if (exitCodeObj instanceof Number) {
+            exitCode = ((Number) exitCodeObj).intValue();
+        } else if (exitCodeObj instanceof String) {
+            try {
+                exitCode = Integer.valueOf((String) exitCodeObj);
+            } catch (NumberFormatException ignored) {
+            }
+        }
         String startedAt = (String) payload.get("startedAt");
         String completedAt = (String) payload.get("completedAt");
 
@@ -167,7 +173,7 @@ public class WorkerController {
                 job.setStartTime();
             } else if (completedAt.equals("1")) {
                 job.setCompletedTime();
-                job.setExitCode(Integer.parseInt(exitCode));
+                job.setExitCode(exitCode);
             }
             jobRepository.save(job);
             System.out.println("Job " + jobId + " updated to status: " + status);

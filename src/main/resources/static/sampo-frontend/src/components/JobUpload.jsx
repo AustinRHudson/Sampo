@@ -2,7 +2,6 @@ import { useState } from "react";
 
 export default function JobUpload() {
     const [file, setFile] = useState(null);
-    const [jobId, setJobId] = useState("");
     const [cpuLimit, setCpuLimit] = useState("");
     const [memoryLimit, setMemoryLimit] = useState("");
     const [message, setMessage] = useState("");
@@ -21,15 +20,9 @@ export default function JobUpload() {
             return;
         }
 
-        if (!jobId.trim()) {
-            setMessage("Please enter a job ID.");
-            return;
-        }
-
         const formData = new FormData();
 
         formData.append("file", file);
-        formData.append("jobId", jobId);
 
         // Only send these if the user entered them
         if (cpuLimit !== "") {
@@ -57,7 +50,6 @@ export default function JobUpload() {
 
             // Reset form
             setFile(null);
-            setJobId("");
             setCpuLimit("");
             setMemoryLimit("");
 
@@ -76,20 +68,6 @@ export default function JobUpload() {
             <h2>Submit Job</h2>
 
             <form onSubmit={handleSubmit}>
-
-                <div>
-                    <label htmlFor="job-id">
-                        Job ID
-                    </label>
-
-                    <input
-                        id="job-id"
-                        type="text"
-                        value={jobId}
-                        onChange={(e) => setJobId(e.target.value)}
-                        placeholder="my-job-123"
-                    />
-                </div>
 
                 <div>
                     <label htmlFor="job-file">

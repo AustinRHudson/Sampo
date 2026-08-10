@@ -22,10 +22,14 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class WorkerApplication {
+
+    private static final ExecutorService jobExecutor = Executors.newFixedThreadPool(1);
     public static void main(String[] args) throws IOException {
         String workerId = args[0];
         int workerPort = Integer.parseInt(args[1]);
@@ -105,22 +109,34 @@ public class WorkerApplication {
 
                         Process process = pb.start();
 
-                        int exitCode = process.waitFor();
+                        jobExecutor.submit(() -> {
+                            try {
+                                Path deleteDir = Path.of("src/main/java/com/minicloud/sampo/worker/output/" + fileName);
+                                int exitCode = process.waitFor();
 
-                        String status = (exitCode == 0) ? "completed" : "failed";
+                                String status = (exitCode == 0)
+                                        ? "completed"
+                                        : "failed";
 
-                        json = "{" +
-                                "\"jobId\": \"" + record.key() + "\"," +
-                                "\"status\": \"" + status + "\"," +
-                                "\"submittedAt\": \"0\"," +
-                                "\"startedAt\": \"0\"," +
-                                "\"completedAt\": \"1\"," +
-                                "\"exitCode\": \"" + exitCode + "\"" +
-                                "}"; 
+                                String jsonUpdate = "{" +
+                                        "\"jobId\": \"" + record.key() + "\"," +
+                                        "\"workerId\": \"" + workerId + "\"," +
+                                        "\"status\": \"" + status + "\"," +
+                                        "\"exitCode\": " + exitCode + "," +
+                                        "\"submittedAt\": \"0\"," +
+                                        "\"startedAt\": \"0\"," +
+                                        "\"completedAt\": \"1\"" +
+                                        "}";
 
-                        sendJobUpdate(json, client);
+                                sendJobUpdate(jsonUpdate, client);
 
-                        deleteDirectory(outputDir.toString());
+                                deleteDirectory(deleteDir.toString());
+
+                            } catch (InterruptedException e) {
+                                Thread.currentThread().interrupt();
+                                System.err.println("Job was interrupted.");
+                            }
+                        });
                     }
                 }
             }

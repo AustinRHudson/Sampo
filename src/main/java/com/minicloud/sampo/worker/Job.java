@@ -8,8 +8,8 @@ import java.time.LocalDateTime;
 
 public class Job {
     @Id
-
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private String status;
 
@@ -25,8 +25,7 @@ public class Job {
 
     private Integer memoryLimit;
 
-    public Job(String id, Double cpuLimit, Integer memoryLimit) {
-        this.id = id;
+    public Job(Double cpuLimit, Integer memoryLimit) {
         this.status = "submitted";
         this.submittedAt = LocalDateTime.now();
         this.exitCode = -1;
@@ -34,8 +33,7 @@ public class Job {
         this.memoryLimit = memoryLimit;
     }
 
-    public Job(String id) {
-        this.id = id;
+    public Job() {
         this.status = "submitted";
         this.submittedAt = LocalDateTime.now();
         this.exitCode = -1;
@@ -43,11 +41,7 @@ public class Job {
         this.memoryLimit = 512;
     }
 
-    protected Job() {
-        // Default constructor for JPA
-    }
-
-     public String getId() {
+     public Long getId() {
         return id;
     }
 
