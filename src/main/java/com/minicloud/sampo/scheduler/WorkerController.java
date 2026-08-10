@@ -27,16 +27,24 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
 import java.util.Properties;
 
+import com.minicloud.sampo.worker.Job;
+import com.minicloud.sampo.worker.JobRepository;
+import com.minicloud.sampo.scheduler.WorkerInfo;
+
 
 @RestController
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/workers")
 public class WorkerController {
+    private final JobRepository jobRepository;
+
     private final WorkerService workerService;
 
-    public WorkerController(WorkerService workerService) {
+    public WorkerController(WorkerService workerService, JobRepository jobRepository) {
         this.workerService = workerService;
+        this.jobRepository = jobRepository;
     }
+    
 
     Properties props = new Properties();
     {
@@ -93,6 +101,9 @@ public class WorkerController {
     @PostMapping("/job")
     public void receiveJob(@RequestParam("file") MultipartFile file, @RequestParam("jobId") String jobId) throws IOException {
         System.out.println("Received job with ID: " + jobId);
+        Job job = new Job(jobId);
+        jobRepository.save(job);
+        System.out.println("Job saved to database with ID: " + jobId);
         try (Producer<String, byte[]> producer = new KafkaProducer<>(props)) {
             System.out.println("Reading ZIP payload from disk...");
             byte[] zipBytes = file.getBytes();

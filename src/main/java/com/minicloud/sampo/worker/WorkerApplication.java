@@ -76,6 +76,17 @@ public class WorkerApplication {
 
                         pb.inheritIO();
 
+                        pb.start().waitFor(); // Wait for the Docker build to complete
+
+                        pb = new ProcessBuilder(
+                            "docker",
+                            "run",
+                            "--rm",
+                            fileName.toLowerCase()
+                        );
+
+                        pb.inheritIO();
+
                         Process process = pb.start();
 
                         int exitCode = process.waitFor();
@@ -154,7 +165,7 @@ public class WorkerApplication {
                         System.err.println("Failed to delete: " + path + " -> " + e.getMessage());
                     }
                 });
-            System.out.println("♻️ Successfully deleted directory and all contents: " + folderPath);
+            System.out.println("Successfully deleted directory and all contents: " + folderPath);
         } catch (IOException e) {
             System.err.println("Failed to walk the directory for deletion: " + e.getMessage());
         }
