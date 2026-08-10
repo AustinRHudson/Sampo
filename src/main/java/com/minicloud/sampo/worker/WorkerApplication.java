@@ -89,8 +89,8 @@ public class WorkerApplication {
 
                         pb.start().waitFor(); // Wait for the Docker build to complete
 
-                        String memoryLimit = "--memory=\"512m\""; // Default memory limit
-                        String cpuLimit = "--cpus=\"1.0\""; // Default CPU limit
+                        String memoryLimit = "--memory=512m";
+                        String cpuLimit = "--cpus=1.0";
 
                         pb = new ProcessBuilder(
                             "docker",
@@ -107,9 +107,11 @@ public class WorkerApplication {
 
                         int exitCode = process.waitFor();
 
+                        String status = (exitCode == 0) ? "completed" : "failed";
+
                         json = "{" +
                                 "\"jobId\": \"" + record.key() + "\"," +
-                                "\"status\": \"completed\"," +
+                                "\"status\": \"" + status + "\"," +
                                 "\"submittedAt\": \"0\"," +
                                 "\"startedAt\": \"0\"," +
                                 "\"completedAt\": \"1\"," +

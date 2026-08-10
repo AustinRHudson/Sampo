@@ -21,11 +21,11 @@ public class Job {
 
     private Integer exitCode;
 
-    private Integer cpuLimit;
+    private Double cpuLimit;
 
     private Integer memoryLimit;
 
-    public Job(String id, Integer cpuLimit, Integer memoryLimit) {
+    public Job(String id, Double cpuLimit, Integer memoryLimit) {
         this.id = id;
         this.status = "submitted";
         this.submittedAt = LocalDateTime.now();
@@ -39,12 +39,44 @@ public class Job {
         this.status = "submitted";
         this.submittedAt = LocalDateTime.now();
         this.exitCode = -1;
-        this.cpuLimit = 1;
+        this.cpuLimit = 1.0;
         this.memoryLimit = 512;
     }
 
     protected Job() {
         // Default constructor for JPA
+    }
+
+     public String getId() {
+        return id;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public Double getCpuLimit() {
+        return cpuLimit;
+    }
+
+    public Integer getMemoryLimit() {
+        return memoryLimit;
+    }
+
+    public LocalDateTime getSubmittedAt() {
+        return submittedAt;
+    }
+
+    public LocalDateTime getStartedAt() {
+        return startedAt;
+    }
+
+    public LocalDateTime getCompletedAt() {
+        return completedAt;
+    }
+
+    public Integer getExitCode() {
+        return exitCode;
     }
 
     public void setStartTime(){

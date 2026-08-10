@@ -96,14 +96,13 @@ public class WorkerController {
 
     @GetMapping("/list")
     public Map<String, WorkerInfo> listWorkers() {
+        //System.out.println("Listing workers..." + workerService.getWorkers());
         return workerService.getWorkers();
     }
 
     @GetMapping("/jobs")
     public List<Job> getJobs() {
         List<Job> jobs = jobRepository.findAll();
-        System.out.println(jobs);
-        System.out.println(jobRepository.findBy("status", "submitted"));
         return jobs;
     }
 
@@ -117,7 +116,7 @@ public class WorkerController {
         System.out.println("Received job with ID: " + jobId);
         Job job;
         if(cpuLimit != null && memoryLimitMb != null) {
-            job = new Job(jobId, cpuLimit.intValue(), memoryLimitMb.intValue());
+            job = new Job(jobId, cpuLimit.doubleValue(), memoryLimitMb.intValue());
         } else {
             job = new Job(jobId);
 

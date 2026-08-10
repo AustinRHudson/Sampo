@@ -3,14 +3,14 @@ package com.minicloud.sampo.scheduler;
 public class WorkerInfo {
     private String id;
 
-    private String name;
-
     private int port;
 
     private String status;
 
+    private static int idIncrementer = 0;
+
     public WorkerInfo(String id, int port, String status) {
-        this.id = id;
+        this.id = "worker-" + idIncrementer++;
         this.port = port;
         this.status = status;
     }

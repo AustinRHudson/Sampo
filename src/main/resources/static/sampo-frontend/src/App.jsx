@@ -28,7 +28,6 @@ function App() {
 
             try {
                 const jobData = await getJobs();
-                console.log("Jobs: ", jobData);
                 setJobs(jobData);
             } catch {
                 // Jobs endpoint isn't implemented yet.
