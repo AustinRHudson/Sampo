@@ -61,11 +61,8 @@ public class WorkerController {
     ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     @PostMapping("/register")
-    public void registerWorker(@RequestBody WorkerInfo worker) {
-        if(workerService.getWorkers().containsKey(String.valueOf(worker.getPort()))) {
-            System.out.println("This port is in use!");
-            return;
-        }
+    public void registerWorker() {
+        WorkerInfo worker = new WorkerInfo();
         workerService.addWorker(worker);
         System.out.println("Worker registered!");
         System.out.println("Worker: " + worker.getId() + ", Port: " + worker.getPort() + ", Status: " + worker.getStatus());

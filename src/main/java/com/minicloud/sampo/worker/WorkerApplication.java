@@ -100,6 +100,8 @@ public class WorkerApplication {
                             "docker",
                             "run",
                             "--rm",
+                            "--name",
+                            "sampo-job-" + record.key(),
                             memoryLimit,
                             cpuLimit,
                             fileName.toLowerCase()

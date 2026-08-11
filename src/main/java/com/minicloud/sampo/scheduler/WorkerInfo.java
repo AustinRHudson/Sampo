@@ -9,10 +9,12 @@ public class WorkerInfo {
 
     private static int idIncrementer = 0;
 
-    public WorkerInfo(String id, int port, String status) {
+    private static int portIncrementer = 9000;
+
+    public WorkerInfo() {
         this.id = "worker-" + idIncrementer++;
-        this.port = port;
-        this.status = status;
+        this.port = portIncrementer++;
+        this.status = "ONLINE";
     }
 
     public String getId() {
