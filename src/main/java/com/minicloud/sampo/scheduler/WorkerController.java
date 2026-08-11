@@ -122,7 +122,8 @@ public class WorkerController {
             byte[] zipBytes = file.getBytes();
 
             System.out.printf("Sending Job [%s] (%d bytes) to Kafka...%n", job.getId(), zipBytes.length);
-            ProducerRecord<String, byte[]> record = new ProducerRecord<>("job-queue", String.valueOf(job.getId()), zipBytes);
+            String jobInfo = job.getId() + " " + job.getCpuLimit() + " " + job.getMemoryLimit();
+            ProducerRecord<String, byte[]> record = new ProducerRecord<>("job-queue", jobInfo, zipBytes);
 
             producer.send(record, new Callback() {
                 @Override

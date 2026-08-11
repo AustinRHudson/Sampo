@@ -63,8 +63,12 @@ public class WorkerApplication {
                 ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, byte[]> record : records) {
                     System.out.printf("Worker received message:", workerId);
+                    String[] jobData = record.key().split(" ");
+                    int jobId = Integer.parseInt(jobData[0]);
+                    double cpu = Double.parseDouble(jobData[1]);
+                    long memory = Long.parseLong(jobData[2]);
                     String json = "{" +
-                            "\"jobId\": \"" + record.key() + "\"," +
+                            "\"jobId\": \"" + jobId + "\"," +
                             "\"status\": \"running\"," +
                             "\"submittedAt\": \"0\"," +
                             "\"startedAt\": \"1\"," +
@@ -72,12 +76,10 @@ public class WorkerApplication {
                             "\"exitCode\": \"-1\"" +
                             "}";
                     sendJobUpdate(json, client);
-                    // update with jobcontroller to update job status in database
-                    // Process the job (record.value()) here
-                    byte[] jobData = record.value();
-                    if(jobData != null) {
+                    byte[] fileData = record.value();
+                    if(fileData != null) {
                         Path outputDir = Path.of("output"); 
-                        String fileName = unzipFromByteArray(jobData, outputDir); 
+                        String fileName = unzipFromByteArray(fileData, outputDir); 
                         Path jobPath = Path.of("output", fileName); 
                         Path dockerPath = Path.of("output", fileName, "Dockerfile");
                         ProcessBuilder pb = new ProcessBuilder(
@@ -94,15 +96,15 @@ public class WorkerApplication {
 
                         pb.start().waitFor(); // Wait for the Docker build to complete
 
-                        String memoryLimit = "--memory=512m";
-                        String cpuLimit = "--cpus=1.0";
+                        String memoryLimit = "--memory=" + memory + "m";
+                        String cpuLimit = "--cpus=" + cpu;
 
                         pb = new ProcessBuilder(
                             "docker",
                             "run",
                             "--rm",
                             "--name",
-                            "sampo-job-" + record.key(),
+                            "sampo-job-" + jobId,
                             memoryLimit,
                             cpuLimit,
                             fileName.toLowerCase()
@@ -122,13 +124,13 @@ public class WorkerApplication {
                                         : "failed";
 
                                 String jsonUpdate = "{" +
-                                        "\"jobId\": \"" + record.key() + "\"," +
+                                        "\"jobId\": \"" + jobId + "\"," +
                                         "\"workerId\": \"" + workerId + "\"," +
                                         "\"status\": \"" + status + "\"," +
-                                        "\"exitCode\": " + exitCode + "," +
                                         "\"submittedAt\": \"0\"," +
                                         "\"startedAt\": \"0\"," +
-                                        "\"completedAt\": \"1\"" +
+                                        "\"completedAt\": \"1\"," +
+                                        "\"exitCode\": " + exitCode +
                                         "}";
 
                                 sendJobUpdate(jsonUpdate, client);
