@@ -33,7 +33,7 @@ public class WorkerApplication {
     public static void main(String[] args) throws IOException {
         String workerId = args[0];
         int workerPort = Integer.parseInt(args[1]);
-        String workerStatus = "Online";
+        String workerStatus = "ONLINE";
 
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -76,17 +76,18 @@ public class WorkerApplication {
                     // Process the job (record.value()) here
                     byte[] jobData = record.value();
                     if(jobData != null) {
-                        Path outputDir = Path.of("src/main/java/com/minicloud/sampo/worker/output"); 
+                        Path outputDir = Path.of("output"); 
                         String fileName = unzipFromByteArray(jobData, outputDir); 
-                        outputDir = Path.of("src/main/java/com/minicloud/sampo/worker/output/" + fileName); 
+                        Path jobPath = Path.of("output", fileName); 
+                        Path dockerPath = Path.of("output", fileName, "Dockerfile");
                         ProcessBuilder pb = new ProcessBuilder(
                             "docker",
                             "build",
                             "-t",
                             fileName.toLowerCase(),
                             "-f",
-                            outputDir.toString() + "/Dockerfile",
-                            outputDir.toString()
+                            dockerPath.toString(),
+                            jobPath.toString()
                         );
 
                         pb.inheritIO();
@@ -113,7 +114,7 @@ public class WorkerApplication {
 
                         jobExecutor.submit(() -> {
                             try {
-                                Path deleteDir = Path.of("src/main/java/com/minicloud/sampo/worker/output/" + fileName);
+                                Path deleteDir = Path.of("output", fileName);
                                 int exitCode = process.waitFor();
 
                                 String status = (exitCode == 0)
