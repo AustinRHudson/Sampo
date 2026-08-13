@@ -87,6 +87,7 @@ public class WorkerController {
                 }
             }, 5, 5, TimeUnit.SECONDS);
         } catch (Exception e) {
+            System.out.println("Error detected: ");
             e.printStackTrace();
         }
     }

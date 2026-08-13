@@ -34,6 +34,10 @@ public class WorkerApplication {
         String workerId = args[0];
         int workerPort = Integer.parseInt(args[1]);
         String workerStatus = "ONLINE";
+        double currentCpu = 0;
+        long currentMemory = 0;
+        double maxCpu = 0;
+        long maxMemory = 0;
 
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
@@ -79,8 +83,10 @@ public class WorkerApplication {
                     byte[] fileData = record.value();
                     if(fileData != null) {
                         Path outputDir = Path.of("output"); 
-                        String fileName = unzipFromByteArray(fileData, outputDir); 
+                        String fileName = unzipFromByteArray(fileData, outputDir, jobId); 
+                        System.out.println(fileName);
                         Path jobPath = Path.of("output", fileName); 
+                        System.out.println(jobPath.toString());
                         Path dockerPath = Path.of("output", fileName, "Dockerfile");
                         ProcessBuilder pb = new ProcessBuilder(
                             "docker",
@@ -150,47 +156,77 @@ public class WorkerApplication {
         }
     } 
 
-     private static String unzipFromByteArray(byte[] bytes, Path targetDir) {
-        // Stream straight from the byte array without creating a temporary file
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-             ZipInputStream zis = new ZipInputStream(bais)) {
+     private static String unzipFromByteArray(byte[] bytes, Path targetDir, int jobId) {
+    try (ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
+         ZipInputStream zis = new ZipInputStream(bais)) {
 
-            ZipEntry entry;
+        ZipEntry entry;
+        String originalRoot = null;
+        String renamedRoot = null;
 
-            Path firstExtractedRoot = null; // To track the first extracted root directory
-            while ((entry = zis.getNextEntry()) != null) {
-                Path filePath = targetDir.resolve(entry.getName()).normalize();
+        while ((entry = zis.getNextEntry()) != null) {
 
-                if (firstExtractedRoot == null) {
-                    // This extracts just the first part of the relative path inside targetDir
-                    Path relativePath = targetDir.relativize(filePath);
-                    firstExtractedRoot = targetDir.resolve(relativePath.getName(0));
-                }
+            Path entryPath = Paths.get(entry.getName()).normalize();
 
-                System.out.println(filePath.toString());
-
-                // // Security Check: Guard against Zip Slip attacks
-                // if (!filePath.startsWith(targetDir)) {
-                //     throw new IOException("Malicious entry outside target directory: " + entry.getName());
-                // }
-
-                if (entry.isDirectory()) {
-                    Files.createDirectories(filePath);
-                } else {
-                    Files.createDirectories(filePath.getParent());
-                    try (FileOutputStream fos = new FileOutputStream(filePath.toFile())) {
-                        zis.transferTo(fos); // Java 9+ feature to stream directly
-                    }
-                }
-                zis.closeEntry();
+            // Prevent Zip Slip
+            if (entryPath.isAbsolute() || entryPath.startsWith("..")) {
+                throw new IOException("Malicious ZIP entry: " + entry.getName());
             }
-                System.out.println("Successfully unpacked ZIP received from Kafka!");
-                return firstExtractedRoot != null ? firstExtractedRoot.getFileName().toString() : null; // Return the name of the last file processed
-        } catch (IOException e) {
-            System.err.println("Failed to unpack payload: " + e.getMessage());
-            return null;
+
+            // Determine the root directory from the first entry
+            if (originalRoot == null) {
+                originalRoot = entryPath.getName(0).toString();
+                renamedRoot = originalRoot + "_" + jobId;
+            }
+
+            // Remove the original root directory
+            Path relativePath;
+
+            if (entryPath.getNameCount() > 1) {
+                relativePath = entryPath.subpath(1, entryPath.getNameCount());
+            } else {
+                relativePath = Paths.get("");
+            }
+
+            // Add renamed root directory
+            Path filePath = targetDir
+                    .resolve(renamedRoot)
+                    .resolve(relativePath)
+                    .normalize();
+
+            // Make sure we didn't escape targetDir
+            if (!filePath.startsWith(targetDir.normalize())) {
+                throw new IOException(
+                        "Malicious entry outside target directory: " + entry.getName()
+                );
+            }
+
+            System.out.println("Extracting: " + filePath);
+
+            if (entry.isDirectory()) {
+                Files.createDirectories(filePath);
+            } else {
+                Files.createDirectories(filePath.getParent());
+
+                try (FileOutputStream fos =
+                         new FileOutputStream(filePath.toFile())) {
+
+                    zis.transferTo(fos);
+                }
+            }
+
+            zis.closeEntry();
         }
+
+        System.out.println("Successfully unpacked ZIP received from Kafka!");
+
+        return renamedRoot;
+
+    } catch (IOException e) {
+        System.err.println("Failed to unpack payload: " + e.getMessage());
+        return null;
     }
+}
 
      public static void deleteDirectory(String folderPath) {
         if (folderPath == null) return;
