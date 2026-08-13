@@ -17,7 +17,6 @@ import java.io.IOException;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import java.net.http.*;
 import java.nio.file.Files;
@@ -56,8 +55,6 @@ public class WorkerController {
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ByteArraySerializer.class.getName());
     }
 
-    private final HttpClient client = java.net.http.HttpClient.newHttpClient();
-
     ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
     @PostMapping("/register")
@@ -66,30 +63,7 @@ public class WorkerController {
         workerService.addWorker(worker);
         System.out.println("Worker registered!");
         System.out.println("Worker: " + worker.getId() + ", Port: " + worker.getPort() + ", Status: " + worker.getStatus());
-        ProcessBuilder pb = new ProcessBuilder(
-    "mvn",
-    "exec:java",
-    "-Dexec.mainClass=com.minicloud.sampo.worker.WorkerApplication",
-    "-Dexec.args=" + worker.getId() + " " + worker.getPort()
-);
-         pb.inheritIO(); 
-        try {
-            pb.start();
-            executorService.scheduleAtFixedRate(() -> {
-                try {
-                    HttpRequest request = HttpRequest.newBuilder()
-                            .uri(URI.create("http://localhost:" + worker.getPort() + "/status"))
-                            .build();
-                    client.send(request, HttpResponse.BodyHandlers.ofString());
-                    //System.out.println(response.body());
-                } catch (Exception e) {
-                    System.out.println("Worker " + worker.getId() + " is offline.");
-                }
-            }, 5, 5, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            System.out.println("Error detected: ");
-            e.printStackTrace();
-        }
+        workerService.startWorker(worker);
     }
 
     @GetMapping("/list")
