@@ -11,6 +11,9 @@ import java.util.Comparator;
 import java.util.stream.Stream;
 
 import com.sun.net.httpserver.HttpServer;
+
+import jakarta.annotation.PreDestroy;
+
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.io.ByteArrayInputStream;
@@ -22,12 +25,24 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WorkerApplication {
+    private static final Map<String, Process> containerProcesses = new ConcurrentHashMap<>();
+    @PreDestroy
+    public void shutdown() {
+        containerProcesses.values().forEach(process -> {
+            if (process.isAlive()) {
+                process.destroy();
+            }
+        });
+    }
 
     private static final ExecutorService jobExecutor = Executors.newFixedThreadPool(1);
     public static void main(String[] args) throws IOException {
@@ -82,46 +97,49 @@ public class WorkerApplication {
                     sendJobUpdate(json, client);
                     byte[] fileData = record.value();
                     if(fileData != null) {
-                        Path outputDir = Path.of("output"); 
-                        String fileName = unzipFromByteArray(fileData, outputDir, jobId); 
-                        System.out.println(fileName);
-                        Path jobPath = Path.of("output", fileName); 
-                        System.out.println(jobPath.toString());
-                        Path dockerPath = Path.of("output", fileName, "Dockerfile");
-                        ProcessBuilder pb = new ProcessBuilder(
-                            "docker",
-                            "build",
-                            "-t",
-                            fileName.toLowerCase(),
-                            "-f",
-                            dockerPath.toString(),
-                            jobPath.toString()
-                        );
-
-                        pb.inheritIO();
-
-                        pb.start().waitFor(); // Wait for the Docker build to complete
-
-                        String memoryLimit = "--memory=" + memory + "m";
-                        String cpuLimit = "--cpus=" + cpu;
-
-                        pb = new ProcessBuilder(
-                            "docker",
-                            "run",
-                            "--rm",
-                            "--name",
-                            "sampo-job-" + jobId,
-                            memoryLimit,
-                            cpuLimit,
-                            fileName.toLowerCase()
-                        );
-
-                        pb.inheritIO();
-
-                        Process process = pb.start();
 
                         jobExecutor.submit(() -> {
                             try {
+                                Path outputDir = Path.of("output"); 
+                                String fileName = unzipFromByteArray(fileData, outputDir, jobId); 
+                                System.out.println(fileName);
+                                Path jobPath = Path.of("output", fileName); 
+                                System.out.println(jobPath.toString());
+                                Path dockerPath = Path.of("output", fileName, "Dockerfile");
+                                ProcessBuilder pb = new ProcessBuilder(
+                                    "docker",
+                                    "build",
+                                    "-t",
+                                    fileName.toLowerCase(),
+                                    "-f",
+                                    dockerPath.toString(),
+                                    jobPath.toString()
+                                );
+
+                                pb.inheritIO();
+
+                                pb.start().waitFor(); // Wait for the Docker build to complete
+
+                                String memoryLimit = "--memory=" + memory + "m";
+                                String cpuLimit = "--cpus=" + cpu;
+
+                                pb = new ProcessBuilder(
+                                    "docker",
+                                    "run",
+                                    "--rm",
+                                    "--name",
+                                    "sampo-job-" + jobId,
+                                    memoryLimit,
+                                    cpuLimit,
+                                    fileName.toLowerCase()
+                                );
+
+                                pb.inheritIO();
+
+                                Process process = pb.start();
+
+                                containerProcesses.put("sampo-job-" + jobId, process);
+
                                 Path deleteDir = Path.of("output", fileName);
                                 int exitCode = process.waitFor();
 
@@ -139,6 +157,16 @@ public class WorkerApplication {
                                         "\"exitCode\": " + exitCode +
                                         "}";
 
+                                ProcessBuilder removeImage = new ProcessBuilder(
+                                    "docker", 
+                                    "rmi", 
+                                    "-f", 
+                                    fileName.toLowerCase()
+                                );
+
+                                process = removeImage.start();
+                                process.waitFor();
+                                
                                 sendJobUpdate(jsonUpdate, client);
 
                                 deleteDirectory(deleteDir.toString());
@@ -146,6 +174,8 @@ public class WorkerApplication {
                             } catch (InterruptedException e) {
                                 Thread.currentThread().interrupt();
                                 System.err.println("Job was interrupted.");
+                            } catch (IOException e) {
+                                System.err.println("Failed to execute Docker process: " + e.getMessage());
                             }
                         });
                     }
