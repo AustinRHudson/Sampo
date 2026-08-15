@@ -97,8 +97,8 @@ export default function JobUpload() {
                     <input
                         id="cpu-limit"
                         type="number"
-                        min="0.1"
-                        step="0.1"
+                        min="0.00001"
+                        step="0.00001"
                         value={cpuLimit}
                         onChange={(e) => setCpuLimit(e.target.value)}
                         placeholder="e.g. 1.0"
@@ -118,8 +118,8 @@ export default function JobUpload() {
                     <input
                         id="memory-limit"
                         type="number"
-                        min="64"
-                        step="64"
+                        min="6"
+                        step="1"
                         value={memoryLimit}
                         onChange={(e) => setMemoryLimit(e.target.value)}
                         placeholder="e.g. 512"

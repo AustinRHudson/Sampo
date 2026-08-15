@@ -82,7 +82,7 @@ public class WorkerController {
     public void receiveJob(
         @RequestParam("file") MultipartFile file,
         @RequestParam(value = "cpuLimit", required = false) Double cpuLimit,
-        @RequestParam(value = "memoryLimitMb", required = false) Long memoryLimitMb) throws IOException {
+        @RequestParam(value = "memoryLimitMb", required = false) Integer memoryLimitMb) throws IOException {
         Job job;
         if(cpuLimit != null && memoryLimitMb != null) {
             job = new Job(cpuLimit.doubleValue(), memoryLimitMb.intValue());

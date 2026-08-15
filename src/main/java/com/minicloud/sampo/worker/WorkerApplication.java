@@ -44,11 +44,12 @@ public class WorkerApplication {
         });
     }
 
-    private static final ExecutorService jobExecutor = Executors.newFixedThreadPool(1);
+    private static final ExecutorService jobExecutor = Executors.newFixedThreadPool(10);
     public static void main(String[] args) throws IOException {
         String workerId = args[0];
         int workerPort = Integer.parseInt(args[1]);
         String workerStatus = "ONLINE";
+        int currentJobs = 0;
         double currentCpu = 0;
         long currentMemory = 0;
         double maxCpu = 0;
@@ -82,6 +83,7 @@ public class WorkerApplication {
                 ConsumerRecords<String, byte[]> records = consumer.poll(Duration.ofMillis(100));
                 for (ConsumerRecord<String, byte[]> record : records) {
                     System.out.printf("Worker received message:", workerId);
+                    currentJobs += 1;
                     String[] jobData = record.key().split(" ");
                     int jobId = Integer.parseInt(jobData[0]);
                     double cpu = Double.parseDouble(jobData[1]);
@@ -122,6 +124,8 @@ public class WorkerApplication {
 
                                 String memoryLimit = "--memory=" + memory + "m";
                                 String cpuLimit = "--cpus=" + cpu;
+
+                                System.out.println(cpu);
 
                                 pb = new ProcessBuilder(
                                     "docker",
