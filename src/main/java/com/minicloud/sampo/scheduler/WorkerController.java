@@ -18,10 +18,6 @@ import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-import java.net.http.*;
-import java.nio.file.Files;
-import java.net.URI;
-
 import org.apache.kafka.clients.producer.*;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -29,7 +25,6 @@ import java.util.Properties;
 
 import com.minicloud.sampo.worker.Job;
 import com.minicloud.sampo.worker.JobRepository;
-import com.minicloud.sampo.scheduler.WorkerInfo;
 
 
 @RestController
