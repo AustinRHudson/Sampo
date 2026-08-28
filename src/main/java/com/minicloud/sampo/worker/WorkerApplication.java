@@ -52,8 +52,8 @@ public class WorkerApplication {
         int currentJobs = 0;
         double currentCpu = 0;
         long currentMemory = 0;
-        double maxCpu = 0;
-        long maxMemory = 0;
+        double maxCpu = Integer.parseInt(args[2]);
+        long maxMemory = Integer.parseInt(args[3]);
 
         Properties props = new Properties();
         props.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");

@@ -13,11 +13,17 @@ public class WorkerInfo {
 
     private int activeJobs;
 
+    private int maxCPU;
+
+    private int maxMemory;
+
     public WorkerInfo() {
         this.id = "worker-" + idIncrementer++;
         this.port = portIncrementer++;
         this.status = "ONLINE";
         this.activeJobs = 0;
+        this.maxCPU = 2;
+        this.maxMemory = 1024;
     }
 
     public String getId() {
@@ -37,6 +43,14 @@ public class WorkerInfo {
     }
 
     public void decrementJobs(){
-        activeJobs -= 1
+        activeJobs -= 1;
+    }
+
+    public int getMaxCPU(){
+        return this.maxCPU;
+    }
+
+    public int getMaxmemory(){
+        return this.maxMemory;
     }
 }

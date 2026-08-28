@@ -31,7 +31,7 @@ public class WorkerService {
             "mvn",
             "exec:java",
             "-Dexec.mainClass=com.minicloud.sampo.worker.WorkerApplication",
-            "-Dexec.args=" + worker.getId() + " " + worker.getPort()
+            "-Dexec.args=" + worker.getId() + " " + worker.getPort() + " " + worker.getMaxCPU() + " " + worker.getMaxmemory()
         );
         pb.inheritIO(); 
         try {
